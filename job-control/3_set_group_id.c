@@ -10,6 +10,9 @@ main(void)
 {
     /*
      * Isn't working for me
+        Error triggered: EPERM
+        Meaning: The process group doesn't exist.
+        Maybe we can't arbitrarily create new process groups
      */
 
     pid_t process_id  = getpid();
