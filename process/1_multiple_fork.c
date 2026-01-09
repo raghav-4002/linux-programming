@@ -13,12 +13,10 @@ main(void)
     for (int i = 0; i < COUNT; i++) {
         if (id != 0) {
             id = fork();
-
             if (id == 0) {
                 printf("Child %d\n", i);
+                break;
             }
-        } else {
-            break;
         }
     }
 
