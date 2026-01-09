@@ -26,7 +26,6 @@ write_to_pipe(int fd)
        input side */
     char buf[] = "Hi from the parent process...";
     write(fd, buf, sizeof(buf));
-
     close(fd);
 }
 
