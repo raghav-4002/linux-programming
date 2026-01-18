@@ -1,42 +1,76 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 
 void
-send_msg_thru_pipe(int *mypipe, int i)
+launch_command(char **cmd, int infile, int outfile)
 {
-    if (i == 0) {
-        close(mypipe[0]);
-        char buf[] = "Message from child 1";
-        write(mypipe[1], buf, sizeof(buf));
-    } else {
-        close(mypipe[1]);
-        char buf[128];
-        read(mypipe[0], buf, sizeof(buf));
-
-        printf("Message from child2: %s\n", buf);
+    if (infile != STDIN_FILENO) {
+        if (dup2(infile, STDIN_FILENO) == -1) {
+            perror("dup");
+            _exit(EXIT_FAILURE);
+        }
+        close(infile);
     }
+
+    if (outfile != STDOUT_FILENO) {
+        if (dup2(outfile, STDOUT_FILENO) == -1) {
+            perror("dup");
+            _exit(EXIT_FAILURE);
+        }
+        close(outfile);
+    }
+
+    execvp(cmd[0], cmd);
+    perror("execvp");
+    _exit(EXIT_FAILURE);
 }
 
-
-#define COUNT 2
 
 int
 main(void)
 {
-    int mypipe[2];
-    if (pipe(mypipe) == -1) {
-        perror(NULL);
-        exit(EXIT_FAILURE);
-    }
+    char *c1[] = {"ls", "-al", NULL};
+    char *c2[] = {"grep", "e", NULL};
+    char *c3[] = {"rev", NULL};
+    char *c4[] = {"sort", NULL};
+    char **cmd[] = {c1, c2, c3, c4};
 
-    for (int i = 0; i < COUNT; i++) {
-        if (fork() == 0) {
-            send_msg_thru_pipe(mypipe, i);
-            break;
+    int count = sizeof(cmd) / sizeof(cmd[1]);
+    int pipefd[2];
+    int infile = STDIN_FILENO;
+    int outfile;
+
+    for (int i = 0; i < count; i++) {
+        if (i + 1 == count) {
+            outfile = STDOUT_FILENO;
+        }
+        else {
+            if (pipe(pipefd) < 0) {
+                perror("Pipe");
+                exit(EXIT_FAILURE);
+            }
+            outfile = pipefd[1];
+        }
+
+        pid_t pid = fork();
+        if (pid == 0) {
+            launch_command(cmd[i], infile, outfile);
+        }
+        else if (pid == -1) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+        else {
+            if (infile != STDIN_FILENO) {
+                close(infile);
+            }
+            if (outfile != STDOUT_FILENO) {
+                close(outfile);
+            }
+            infile = pipefd[0];
         }
     }
-
 }
