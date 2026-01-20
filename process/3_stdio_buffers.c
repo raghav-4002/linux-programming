@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -14,4 +15,5 @@ main(void)
 {
     printf("Hello, world\n");
     write(STDOUT_FILENO, "Ciao\n", 5);
+    _exit(EXIT_SUCCESS);
 }
